@@ -412,7 +412,11 @@ def sort_intervals(
         groups=groups,
         starts=starts,
         ends=ends,
-        sort_reverse_direction=sort_reverse_direction,
+        sort_reverse_direction=(
+            None
+            if sort_reverse_direction is None
+            else _as_1d_array(sort_reverse_direction, name="sort_reverse_direction")
+        ),
     )
 
 
@@ -826,7 +830,7 @@ def window(
         groups = _groups_or_arange(groups, len(starts)),
         starts=starts,
         ends=ends,
-        negative_strand=negative_strand,
+        negative_strand=_as_1d_array(negative_strand, name="negative_strand"),
         window_size=window_size,
     )
 
@@ -872,7 +876,7 @@ def tile(
         groups = None,
         starts=starts,
         ends=ends,
-        negative_strand=negative_strand,
+        negative_strand=_as_1d_array(negative_strand, name="negative_strand"),
         tile_size=tile_size,
     )
 
@@ -920,7 +924,7 @@ def spliced_subsequence(                     # same public signature
         starts,
         ends,
         groups,
-        strand_flags=strand_flags,
+        strand_flags=_as_1d_array(strand_flags, name="strand_flags"),
         slice_starts=slice_starts,
         slice_ends=slice_ends,
         force_plus_strand=force_plus_strand,
@@ -994,7 +998,7 @@ def extend(
         starts=starts,
         ends=ends,
         groups=groups,
-        negative_strand=negative_strand,
+        negative_strand=_as_1d_array(negative_strand, name="negative_strand"),
         ext_3=ext_3,
         ext_5=ext_5,
     )
@@ -1048,7 +1052,7 @@ def group_cumsum(
         starts=starts,
         ends=ends,
         groups=groups,
-        negative_strand=negative_strand,
+        negative_strand=_as_1d_array(negative_strand, name="negative_strand"),
         sort=sort,
     )
 
@@ -1343,10 +1347,13 @@ def _resolve_rust_fn(
 
 
 def _as_1d_array(a: NDArray | Sequence[Any], *, name: str) -> np.ndarray:
+    # The Rust kernels read their inputs as slices, which needs C-contiguous
+    # memory; a strided view (pandas >= 3.1 can return one from Series.values)
+    # is copied here rather than rejected there.
     arr = np.asarray(a)
     if arr.ndim != 1:
         raise ValueError(f"`{name}` must be a 1-D array.")
-    return arr
+    return np.ascontiguousarray(arr)
 
 
 def _int_bounds(arr: np.ndarray, *, name: str) -> tuple[int, int]:
