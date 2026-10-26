@@ -110,6 +110,8 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
     steps:
+      - uses: actions/checkout@v7
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -123,9 +125,10 @@ jobs:
 
       - name: Install and test the stable-ABI wheel
         run: |
-          python -m pip install --upgrade pip numpy
+          python -m pip install --upgrade pip numpy pytest
           python -m pip install --no-index --find-links dist ruranges
-          python -c "import numpy as np, ruranges.numpy as k; s=np.array([1,5],dtype=np.int64); e=np.array([4,9],dtype=np.int64); g=np.zeros(2,dtype=np.uint32); assert len(k.merge(starts=s,ends=e,groups=g,slack=0)[0])==2; print('ruranges ABI3 ok')"
+          pytest --import-mode=importlib tests
+          python -I -c "import numpy as np, ruranges.numpy as k; s=np.array([1,5],dtype=np.int64); e=np.array([4,9],dtype=np.int64); g=np.zeros(2,dtype=np.uint32); assert len(k.merge(starts=s,ends=e,groups=g,slack=0)[0])==2; print('ruranges ABI3 ok')"
 
   publish:
     name: Verify and publish
